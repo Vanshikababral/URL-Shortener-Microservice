@@ -2,76 +2,57 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const dns = require('dns');
-const url = require('url');
+const urlModule = require('url');
 const app = express();
-
-const fs = require('fs');
-const path = require('path');
 
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-const DATA_FILE = path.join(__dirname, 'urls.json');
+// In-memory storage is actually more reliable for these quick tests on ephemeral platforms
+const urlDatabase = {};
+let idCounter = 1;
 
-// Helper to load/save data
-function loadData() {
-  try {
-    if (!fs.existsSync(DATA_FILE)) return { urls: {}, counter: 1 };
-    const content = fs.readFileSync(DATA_FILE, 'utf8');
-    return content ? JSON.parse(content) : { urls: {}, counter: 1 };
-  } catch (err) {
-    return { urls: {}, counter: 1 };
-  }
-}
-
-function saveData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
-
-// Root route
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html');
 });
 
 // POST /api/shorturl
 app.post('/api/shorturl', (req, res) => {
-  let originalUrl = req.body.url;
+  const originalUrl = req.body.url;
   
   if (!originalUrl) {
     return res.json({ error: 'invalid url' });
   }
 
+  // Basic format check first
   try {
-    const urlObj = new url.URL(originalUrl);
+    const urlObj = new urlModule.URL(originalUrl);
     
+    // Test 4 requires checking for http/https
     if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
       return res.json({ error: 'invalid url' });
     }
 
+    // Hint says use dns.lookup
     dns.lookup(urlObj.hostname, (err) => {
-      // If dns.lookup fails, it might be an invalid url or network issue in test env
-      // However, we must pass FCC test 4. 
       if (err) {
+        // If it's a valid format but host not found, FCC still expects 'invalid url'
         return res.json({ error: 'invalid url' });
       }
 
-      const data = loadData();
-      
-      // Check if already in database (case-sensitive check as URLs are case-sensitive in paths)
-      const existingId = Object.keys(data.urls).find(key => data.urls[key] === originalUrl);
-      
-      if (existingId) {
+      // Check if already exists
+      const existingEntry = Object.entries(urlDatabase).find(([id, url]) => url === originalUrl);
+      if (existingEntry) {
         return res.json({ 
           original_url: originalUrl, 
-          short_url: parseInt(existingId) 
+          short_url: parseInt(existingEntry[0]) 
         });
       }
 
-      const shortUrl = data.counter++;
-      data.urls[shortUrl] = originalUrl;
-      saveData(data);
+      const shortUrl = idCounter++;
+      urlDatabase[shortUrl] = originalUrl;
 
       res.json({ 
         original_url: originalUrl, 
@@ -79,20 +60,20 @@ app.post('/api/shorturl', (req, res) => {
       });
     });
   } catch (err) {
-    res.json({ error: 'invalid url' });
+    // If URL constructor fails, it's definitely invalid
+    return res.json({ error: 'invalid url' });
   }
 });
 
 // GET /api/shorturl/:short_url
 app.get('/api/shorturl/:short_url', (req, res) => {
-  const shortUrlParam = req.params.short_url;
-  const data = loadData();
-  const originalUrl = data.urls[shortUrlParam];
+  const shortUrl = req.params.short_url;
+  const originalUrl = urlDatabase[shortUrl];
 
   if (originalUrl) {
     return res.redirect(originalUrl);
   } else {
-    return res.json({ error: 'No short URL found for the given input' });
+    return res.json({ error: 'invalid url' });
   }
 });
 
