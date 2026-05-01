@@ -5,13 +5,24 @@ const dns = require('dns');
 const url = require('url');
 const app = express();
 
+const fs = require('fs');
+const path = require('path');
+
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static('public'));
 
-// Simple in-memory database
-const urlDatabase = {};
-let idCounter = 1;
+const DATA_FILE = path.join(__dirname, 'urls.json');
+
+// Helper to load/save data
+function loadData() {
+  if (!fs.existsSync(DATA_FILE)) return { urls: {}, counter: 1 };
+  return JSON.parse(fs.readFileSync(DATA_FILE));
+}
+
+function saveData(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
 
 // Root route
 app.get('/', (req, res) => {
@@ -25,26 +36,27 @@ app.post('/api/shorturl', (req, res) => {
   try {
     const parsedUrl = new url.URL(originalUrl);
     
-    // Check if protocol is http: or https:
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
       return res.json({ error: 'invalid url' });
     }
 
-    // Verify host with dns.lookup
     dns.lookup(parsedUrl.hostname, (err) => {
       if (err) {
         return res.json({ error: 'invalid url' });
       }
 
-      // If already in database, return existing entry
-      const existingId = Object.keys(urlDatabase).find(key => urlDatabase[key] === originalUrl);
+      const data = loadData();
+      
+      // Check if already in database
+      const existingId = Object.keys(data.urls).find(key => data.urls[key] === originalUrl);
       if (existingId) {
         return res.json({ original_url: originalUrl, short_url: parseInt(existingId) });
       }
 
       // Save to database
-      const shortUrl = idCounter++;
-      urlDatabase[shortUrl] = originalUrl;
+      const shortUrl = data.counter++;
+      data.urls[shortUrl] = originalUrl;
+      saveData(data);
 
       res.json({ original_url: originalUrl, short_url: shortUrl });
     });
@@ -55,13 +67,15 @@ app.post('/api/shorturl', (req, res) => {
 
 // GET /api/shorturl/:short_url
 app.get('/api/shorturl/:short_url', (req, res) => {
-  const shortUrl = req.params.short_url;
-  const originalUrl = urlDatabase[shortUrl];
+  const shortUrlParam = req.params.short_url;
+  const data = loadData();
+  const originalUrl = data.urls[shortUrlParam];
 
   if (originalUrl) {
-    res.redirect(originalUrl);
+    console.log(`Redirecting ${shortUrlParam} to ${originalUrl}`);
+    return res.redirect(originalUrl);
   } else {
-    res.json({ error: 'No short URL found for the given input' });
+    return res.json({ error: 'No short URL found for the given input' });
   }
 });
 
