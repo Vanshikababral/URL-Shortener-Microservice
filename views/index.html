@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Shortener — Shrink Your Links</title>
+  <meta name="description" content="A premium URL shortener microservice. Fast, reliable, and easy to use.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050510;
+      color: #e0e0e8;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Gradient Background Orbs */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(140px);
+      opacity: 0.2;
+      z-index: 0;
+      pointer-events: none;
+    }
+    body::before {
+      width: 500px; height: 500px;
+      background: #00d2ff;
+      top: -150px; left: -100px;
+      animation: drift 15s ease-in-out infinite alternate;
+    }
+    body::after {
+      width: 450px; height: 450px;
+      background: #3a7bd5;
+      bottom: -100px; right: -50px;
+      animation: drift 12s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes drift {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(70px, 40px) scale(1.1); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 600px;
+      width: 100%;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: #8a8a9a;
+      margin-bottom: 2.5rem;
+      line-height: 1.6;
+    }
+
+    .shorten-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 2rem;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      margin-bottom: 2rem;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: #00d2ff;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.1);
+    }
+
+    .btn {
+      padding: 1rem 2rem;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+      color: #fff;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 210, 255, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .result {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 12px;
+      background: rgba(0, 210, 255, 0.1);
+      border: 1px solid rgba(0, 210, 255, 0.2);
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .result.visible { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result p {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      color: #aaa;
+    }
+
+    .result a {
+      color: #00d2ff;
+      font-weight: 600;
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .result a:hover {
+      text-decoration: underline;
+    }
+
+    .examples {
+      text-align: left;
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .examples h3 {
+      font-size: 1rem;
+      color: #888;
+      margin-bottom: 0.5rem;
+    }
+
+    .examples ul {
+      list-style: none;
+    }
+
+    .examples li {
+      margin-bottom: 0.4rem;
+    }
+
+    .examples code {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #00d2ff;
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.8rem;
+      color: #444;
+    }
+
+    footer a {
+      color: #3a7bd5;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="hero">
+    <h1>LinkShrink</h1>
+    <p>A fast, secure, and premium URL shortener. Paste your long link below and get a tiny one in seconds.</p>
+  </div>
+
+  <div class="shorten-box">
+    <form id="urlForm" action="/api/shorturl" method="POST">
+      <div class="input-group">
+        <input type="text" name="url" id="urlInput" placeholder="https://example.com" required>
+        <button type="submit" class="btn">Shorten</button>
+      </div>
+    </form>
+
+    <div class="result" id="resultBox">
+      <p>Your short URL is ready:</p>
+      <a href="#" id="shortLink" target="_blank"></a>
+    </div>
+  </div>
+
+  <div class="examples">
+    <h3>API Usage:</h3>
+    <ul>
+      <li>POST <code>/api/shorturl</code> - Send <code>{ "url": "https://www.google.com" }</code></li>
+      <li>GET <code>/api/shorturl/1</code> - Redirects to your original link</li>
+    </ul>
+  </div>
+
+  <footer>
+    Built as a <a href="https://www.freecodecamp.org/learn/back-end-development-and-apis/back-end-development-and-apis-projects/url-shortener-microservice" target="_blank">freeCodeCamp</a> project.
+  </footer>
+</div>
+
+<script>
+  const form = document.getElementById('urlForm');
+  const resultBox = document.getElementById('resultBox');
+  const shortLink = document.getElementById('shortLink');
+  const urlInput = document.getElementById('urlInput');
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const url = urlInput.value;
+
+    try {
+      const response = await fetch('/api/shorturl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `url=${encodeURIComponent(url)}`
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        alert('Error: ' + data.error);
+        resultBox.classList.remove('visible');
+      } else {
+        const fullShortUrl = window.location.origin + '/api/shorturl/' + data.short_url;
+        shortLink.href = fullShortUrl;
+        shortLink.textContent = fullShortUrl;
+        resultBox.classList.add('visible');
+      }
+    } catch (err) {
+      alert('Failed to shorten URL');
+    }
+  };
+</script>
+
+</body>
+</html>
