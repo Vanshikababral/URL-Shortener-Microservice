@@ -60,12 +60,16 @@ app.post('/api/shorturl', (req, res) => {
 // GET /api/shorturl/:short_url
 app.get('/api/shorturl/:short_url', (req, res) => {
   const shortUrl = req.params.short_url;
-  const originalUrl = urlDatabase[shortUrl];
+  
+  // Look up using the string key, but also try parsing as an integer
+  // because the database used to use numeric keys.
+  const originalUrl = urlDatabase[shortUrl] || urlDatabase[parseInt(shortUrl)];
 
   if (originalUrl) {
     return res.redirect(originalUrl);
   } else {
-    return res.json({ error: 'invalid url' });
+    // FCC expects this specific error if the short link doesn't exist
+    return res.json({ error: 'No short URL found for the given input' });
   }
 });
 
