@@ -42,17 +42,9 @@ app.post('/api/shorturl', (req, res) => {
         return res.json({ error: 'invalid url' });
       }
 
-      // Check if already exists
-      const existingEntry = Object.entries(urlDatabase).find(([id, url]) => url === originalUrl);
-      if (existingEntry) {
-        return res.json({ 
-          original_url: originalUrl, 
-          short_url: parseInt(existingEntry[0]) 
-        });
-      }
-
+      // Generate a new ID and store as a string to avoid type mismatches during GET
       const shortUrl = idCounter++;
-      urlDatabase[shortUrl] = originalUrl;
+      urlDatabase[shortUrl.toString()] = originalUrl;
 
       res.json({ 
         original_url: originalUrl, 
