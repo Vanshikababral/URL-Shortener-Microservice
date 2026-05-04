@@ -83,7 +83,7 @@ app.post('/api/shorturl', (req, res) => {
 
 // GET /api/shorturl/:short_url
 app.get('/api/shorturl/:short_url', async (req, res) => {
-  const short = Number(req.params.short_url); // ✅ Explicit conversion to Number
+  const short = parseInt(req.params.short_url); // Convert to number
 
   try {
     const data = await Url.findOne({ short_url: short });
@@ -92,13 +92,18 @@ app.get('/api/shorturl/:short_url', async (req, res) => {
       return res.json({ error: 'No short URL found for the given input' });
     }
 
-    // Redirect to the original URL
-    res.redirect(data.original_url);
+    // Force a clean HTTP 302 redirect for FCC test compatibility
+    res.writeHead(302, {
+      Location: data.original_url
+    });
+    return res.end();
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 
