@@ -81,19 +81,22 @@ app.post('/api/shorturl', (req, res) => {
 
 // GET /api/shorturl/:short_url
 app.get('/api/shorturl/:short_url', async (req, res) => {
-  const shortUrl = req.params.short_url;
+  const { short_url } = req.params;
   
   try {
-    const data = await Url.findOne({ short_url: shortUrl });
+    // We parse to Int because the schema stores it as a Number
+    const data = await Url.findOne({ short_url: parseInt(short_url) });
     if (data) {
       return res.redirect(data.original_url);
     } else {
       return res.json({ error: 'No short URL found for the given input' });
     }
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
