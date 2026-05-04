@@ -58,11 +58,13 @@ app.post('/api/shorturl', (req, res) => {
             short_url: findOne.short_url
           });
         } else {
-          // Get next short_url ID
-          let count = await Url.countDocuments({});
+          // Get next short_url ID by finding the highest one
+          const lastUrl = await Url.findOne().sort({ short_url: -1 });
+          const nextId = lastUrl ? lastUrl.short_url + 1 : 1;
+
           let newUrl = new Url({
             original_url: originalUrl,
-            short_url: count + 1
+            short_url: nextId
           });
           await newUrl.save();
           res.json({
@@ -81,7 +83,7 @@ app.post('/api/shorturl', (req, res) => {
 
 // GET /api/shorturl/:short_url
 app.get('/api/shorturl/:short_url', async (req, res) => {
-  const short = req.params.short_url;
+  const short = Number(req.params.short_url); // ✅ Explicit conversion to Number
 
   try {
     const data = await Url.findOne({ short_url: short });
@@ -97,6 +99,7 @@ app.get('/api/shorturl/:short_url', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 
